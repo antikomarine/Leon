@@ -18,11 +18,12 @@ import unittest
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 
-from colorchat import bots, models, people, theme  # noqa: E402
+from colorchat import bots, brand, models, people, theme  # noqa: E402
 from colorchat.assets import ASSET_ROOT, AVATAR_SIZES, ICON_SIZES, PICTOGRAM_SIZES  # noqa: E402
 from colorchat.pictograms import (  # noqa: E402
     BY_KEY, CATEGORIES, PICTOGRAMS, glyph_ink, in_category,
 )
+from colorchat.colorutil import text_ink  # noqa: E402
 from colorchat.textutil import elide  # noqa: E402
 
 ICON_NAMES = (
@@ -130,6 +131,39 @@ class TestColours(unittest.TestCase):
 
     def test_readable_gives_up_gracefully(self):
         self.assertEqual(theme.readable("#000000", "#000000", 21.0), "#ffffff")
+
+
+class TestBrandColours(unittest.TestCase):
+    """Everything visible is one of the six brand colours, or a deeper one."""
+
+    def family(self):
+        return set(brand.BRAND) | set(brand.DEEP)
+
+    def test_contacts_come_from_the_brand_palette(self):
+        for person in (people.ME, *people.CONTACTS):
+            self.assertIn(person.color, self.family(), person.key)
+
+    def test_picture_tiles_come_from_the_brand_palette(self):
+        for pictogram in PICTOGRAMS:
+            self.assertIn(pictogram.color, self.family(), pictogram.key)
+
+    def test_tiles_on_screen_together_never_share_a_colour(self):
+        for name in CATEGORIES:
+            colors = [p.color for p in in_category(name)]
+            self.assertEqual(len(colors), len(set(colors)), f"repeated colour in {name}")
+
+    def test_each_palette_leads_with_a_brand_colour(self):
+        for palette in theme.PALETTES:
+            self.assertIn(palette.accent, self.family(), palette.key)
+
+    def test_ink_is_chosen_by_contrast_not_by_guesswork(self):
+        for color in brand.BRAND + brand.DEEP:
+            ink = text_ink(color)
+            other = "#ffffff" if ink != "#ffffff" else "#12181f"
+            self.assertGreaterEqual(
+                theme.contrast_ratio(ink, color), theme.contrast_ratio(other, color), color
+            )
+            self.assertGreaterEqual(theme.contrast_ratio(ink, color), 4.5, color)
 
 
 class TestStore(unittest.TestCase):

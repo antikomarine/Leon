@@ -25,6 +25,7 @@ ROOT = os.path.dirname(HERE)
 sys.path[:0] = [HERE, ROOT]
 
 from rasterizer import Raster, mix, rgba  # noqa: E402
+from colorchat.colorutil import is_dark  # noqa: E402
 from colorchat.pictograms import PICTOGRAMS, glyph_ink  # noqa: E402
 
 ASSETS = os.path.join(ROOT, "assets")
@@ -400,16 +401,23 @@ def draw_avatar(size: int, person_color: str, style: int, badge: str) -> Raster:
     as a shape."""
     u = size / 100
     r = Raster(size, size, ss=3)
-    r.fill_rect(0, 0, size, size / 2, rgba(mix(person_color, "#ffffff", 0.34)))
-    r.fill_rect(0, size / 2, size, size, rgba(mix(person_color, "#000000", 0.10)))
+    # Half the brand colours are pale, so the backdrop is deepened for those
+    # instead of lightened -- otherwise the face would vanish into it.
+    pale = not is_dark(person_color)
+    top = mix(person_color, "#000000", 0.10) if pale else mix(person_color, "#ffffff", 0.34)
+    bottom = mix(person_color, "#000000", 0.34 if pale else 0.10)
+    r.fill_rect(0, 0, size, size / 2, rgba(top))
+    r.fill_rect(0, size / 2, size, size, rgba(bottom))
     skin = rgba(SKIN_TONES[style % len(SKIN_TONES)])
-    hair = rgba(mix(person_color, "#1a1108", 0.62))
-    shirt = rgba(mix(person_color, "#ffffff", 0.72))
+    hair = rgba(mix(person_color, "#1a1108", 0.72 if pale else 0.62))
+    shirt = rgba(mix(person_color, "#000000", 0.55) if pale
+                 else mix(person_color, "#ffffff", 0.72))
     line = rgba("#3a2a1e", 210)
 
     if style == 8:  # the group avatar shows two people
         r.fill_circle(30 * u, 100 * u, 28 * u, shirt)
-        r.fill_circle(70 * u, 96 * u, 32 * u, rgba(mix(person_color, "#ffffff", 0.55)))
+        r.fill_circle(70 * u, 96 * u, 32 * u,
+                      rgba(mix(person_color, "#000000" if pale else "#ffffff", 0.4)))
         r.fill_circle(30 * u, 46 * u, 15 * u, rgba(SKIN_TONES[2]))
         r.fill_circle(70 * u, 50 * u, 18 * u, rgba(SKIN_TONES[5]))
         r.arc(30 * u, 46 * u, 15 * u, 195, 345, 9 * u, hair)

@@ -13,7 +13,8 @@ from __future__ import annotations
 
 import tkinter as tk
 
-from ..theme import Theme, is_dark, mix
+from ..colorutil import is_dark, text_ink
+from ..theme import Theme, mix
 
 
 class Tooltip:
@@ -116,7 +117,7 @@ class ColorButton(tk.Frame):
         palette = self.theme.p
         if self.style == "solid":
             base = self.color or palette.accent
-            fg = "#ffffff" if is_dark(base) else "#10181f"
+            fg = text_ink(base)
             if palette.key == "contrast":
                 base, fg = palette.accent, palette.accent_text
         elif self.style == "ghost":

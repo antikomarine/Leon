@@ -58,3 +58,12 @@ def readable(color: str, background: str, ratio: float = 4.5) -> str:
 def ink_for(background: str) -> str:
     """Pick white or near-black artwork for a coloured tile."""
     return "#ffffff" if contrast_ratio("#ffffff", background) >= 3.0 else "#16202b"
+
+
+def text_ink(background: str, light: str = "#ffffff", dark: str = "#12181f") -> str:
+    """Pick whichever of two inks reads better on ``background``.
+
+    Half of the brand colours are light and half are dark, so no fixed rule
+    ("white on colour") works: the choice is made per colour, by contrast.
+    """
+    return light if contrast_ratio(light, background) >= contrast_ratio(dark, background) else dark

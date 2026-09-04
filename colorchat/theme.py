@@ -14,7 +14,8 @@ import tkinter.font as tkfont
 from dataclasses import dataclass
 from typing import Callable
 
-from .colorutil import contrast_ratio, is_dark, mix, readable  # noqa: F401
+from .brand import DEEP_SKY, LIME, MINT, ORANGE, PEACH, SKY, VIOLET
+from .colorutil import contrast_ratio, mix, readable, text_ink  # noqa: F401
 
 
 @dataclass(frozen=True)
@@ -44,46 +45,46 @@ class Palette:
 LIGHT = Palette(
     key="bright",
     name="Bright",
-    description="Soft daylight colours",
-    window="#e9eef3",
-    bar="#0f766e",
-    bar_text="#ffffff",
+    description="Daylight, with the brand colours at full strength",
+    window="#f2eeea",
+    bar=ORANGE,
+    bar_text=text_ink(ORANGE),
     panel="#ffffff",
-    panel_alt="#eef3f7",
-    canvas="#f4f7fa",
-    text="#132029",
-    text_soft="#526270",
-    line="#c9d5df",
-    accent="#0f766e",
-    accent_text="#ffffff",
-    mine_bg="#d6f2dd",
-    mine_text="#0d2a18",
-    tick_read="#1d6ff2",
-    focus="#b8006e",
-    tint=0.86,
+    panel_alt="#f4f0ec",
+    canvas="#faf7f4",
+    text="#17120f",
+    text_soft="#5d5450",
+    line="#d9cec7",
+    accent=ORANGE,
+    accent_text=text_ink(ORANGE),
+    mine_bg=mix(MINT, "#ffffff", 0.62),
+    mine_text="#0c2117",
+    tick_read=DEEP_SKY,
+    focus=VIOLET,
+    tint=0.82,
     dark=False,
 )
 
 NIGHT = Palette(
     key="night",
     name="Night",
-    description="Dark background, gentle on the eyes",
-    window="#0f151b",
-    bar="#123a35",
-    bar_text="#eaf6f2",
-    panel="#18212a",
-    panel_alt="#22303c",
-    canvas="#131c24",
-    text="#eef4f8",
-    text_soft="#a5b6c4",
-    line="#31424f",
-    accent="#1f9d76",
-    accent_text="#04150f",
-    mine_bg="#1f4d3d",
-    mine_text="#eafaf2",
-    tick_read="#5cc0ff",
-    focus="#ffd54a",
-    tint=0.72,
+    description="Dark background — where these colours glow",
+    window="#0d1014",
+    bar=mix(ORANGE, "#000000", 0.68),
+    bar_text=PEACH,
+    panel="#171b21",
+    panel_alt="#232a33",
+    canvas="#11151a",
+    text="#f1f4f7",
+    text_soft="#a9b4c0",
+    line="#333c48",
+    accent=MINT,
+    accent_text=text_ink(MINT),
+    mine_bg=mix(MINT, "#0d1014", 0.78),
+    mine_text="#e9fff3",
+    tick_read=SKY,
+    focus=LIME,
+    tint=0.74,
     dark=True,
 )
 
@@ -93,18 +94,18 @@ HIGH_CONTRAST = Palette(
     description="Maximum contrast, thick outlines",
     window="#000000",
     bar="#000000",
-    bar_text="#ffe100",
+    bar_text=LIME,
     panel="#000000",
-    panel_alt="#1c1c1c",
+    panel_alt="#181818",
     canvas="#000000",
     text="#ffffff",
-    text_soft="#e8e8e8",
-    line="#ffe100",
-    accent="#ffe100",
-    accent_text="#000000",
-    mine_bg="#003b1f",
+    text_soft="#f0f0f0",
+    line=LIME,
+    accent=LIME,
+    accent_text=text_ink(LIME),
+    mine_bg=mix(MINT, "#000000", 0.82),
     mine_text="#ffffff",
-    tick_read="#57d1ff",
+    tick_read=SKY,
     focus="#ffffff",
     tint=0.0,
     dark=True,
@@ -232,7 +233,7 @@ class Theme:
 
     def icon_ink(self, on_color: str) -> str:
         """Pick the light or the dark icon variant for a given background."""
-        return "light" if is_dark(on_color) else "dark"
+        return "light" if text_ink(on_color) == "#ffffff" else "dark"
 
     def icon_size(self) -> int:
         for size in (20, 26, 34):

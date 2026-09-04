@@ -10,12 +10,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from .brand import (
+    DEEP_MINT, DEEP_ORANGE, DEEP_SKY, LIME, MINT, ORANGE, PEACH, SKY, VIOLET,
+)
+
 
 @dataclass(frozen=True)
 class Person:
     key: str
     name: str
-    color: str          # the contact's signature colour
+    color: str          # the contact's signature colour, from the brand six
     badge: str          # shape stamped on the avatar: a colour-free identifier
     style: int          # which avatar illustration to draw
     about: str          # status line under the name
@@ -25,7 +29,7 @@ class Person:
 ME = Person(
     key="me",
     name="You",
-    color="#0f766e",
+    color=DEEP_MINT,
     badge="circle",
     style=0,
     about="This is you",
@@ -33,21 +37,21 @@ ME = Person(
 )
 
 CONTACTS: tuple[Person, ...] = (
-    Person("amina", "Amina Yusuf", "#d6336c", "heart", 1,
+    Person("amina", "Amina Yusuf", ORANGE, "heart", 1,
            "Best friend · loves photos", "warm"),
-    Person("luca", "Luca Rossi", "#2f7d4f", "square", 2,
+    Person("luca", "Luca Rossi", MINT, "square", 2,
            "Neighbour · walks the dog at 6", "practical"),
-    Person("priya", "Priya Nair", "#b8871b", "triangle", 3,
+    Person("priya", "Priya Nair", PEACH, "triangle", 3,
            "Sister · always hungry", "playful"),
-    Person("tom", "Tom Becker", "#2b6fbb", "star", 4,
+    Person("tom", "Tom Becker", SKY, "star", 4,
            "Work · project Bluebird", "practical"),
-    Person("grace", "Grace Okafor", "#7a5cd6", "diamond", 5,
+    Person("grace", "Grace Okafor", VIOLET, "diamond", 5,
            "Support worker · weekdays 9–5", "carer"),
-    Person("kenji", "Kenji Sato", "#c2571f", "hexagon", 6,
+    Person("kenji", "Kenji Sato", LIME, "hexagon", 6,
            "Music club · Thursday nights", "playful"),
-    Person("hana", "Dr. Hana Fischer", "#c0392b", "plus", 7,
+    Person("hana", "Dr. Hana Fischer", DEEP_SKY, "plus", 7,
            "Clinic · replies within a day", "carer"),
-    Person("family", "Family group", "#5a5f7a", "group", 8,
+    Person("family", "Family group", DEEP_ORANGE, "group", 8,
            "Mum, Dad, Priya and you", "warm"),
 )
 

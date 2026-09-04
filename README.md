@@ -44,6 +44,32 @@ macOS; on Linux you may need the system package:
 
 ![The picture board](docs/screenshots/picture-board.png)
 
+## The palette
+
+The whole app is built from six colours:
+
+| | Colour | Used for |
+| --- | --- | --- |
+| 🟥 | `#FF4200` orange | The app bar and the main action colour, Amina, "No", "Help", "Love" |
+| 🟩 | `#47FF94` mint | Your own message bubbles, Luca, "Yes", "Home" |
+| 🟪 | `#7F2EFF` violet | The keyboard focus ring, Grace, "Thank you", "Medicine", "Music" |
+| 🟦 | `#62C7FF` sky | Read ticks, Tom, "Please wait", "Drink", "Call me" |
+| 🟨 | `#CBFF77` lime | The high-contrast scheme, Kenji, "Happy", "Nice weather" |
+| 🟧 | `#FFBA82` peach | Night-mode headings, Priya, "Maybe", "Food" |
+
+They live in [`colorchat/brand.py`](colorchat/brand.py), which is the only
+place any of them is written down — contacts, picture tiles and all three
+colour schemes are built from those six values and darker versions of them.
+Change one and rerun `python3 tools/make_assets.py`, and the contacts, symbols
+and avatars all follow.
+
+Four of the six are light colours, so no single rule like "white text on
+colour" works. Nothing hard-codes the decision: `text_ink()` picks white or
+near-black per colour by measuring contrast, and `readable()` lightens or
+darkens a colour until it clears 4.5:1 on whatever background it lands on. That
+is why the same six colours work on a white panel, on a dark one, and on pure
+black.
+
 ## Built for readability and for disabled users
 
 This is the part of the app that got the most attention.
@@ -59,11 +85,12 @@ This is the part of the app that got the most attention.
   app at once. The layout reflows: the conversation list widens, message
   bubbles rewrap, the toolbar wraps onto extra lines, and long names are
   shortened with an ellipsis rather than overlapping.
-* **Three colour schemes** — Bright, Night and High contrast (black, white and
-  yellow with thick outlines). Every text/background pair in every scheme is
-  tested to meet the WCAG AA contrast ratio of 4.5:1, and contact colours are
-  automatically lightened or darkened until they are readable on whichever
-  background they land on.
+* **Three colour schemes** — Bright (orange bar, colours at full strength),
+  Night (where these colours glow) and High contrast (black and lime with thick
+  outlines). Every text/background pair in every scheme is tested to meet the
+  WCAG AA contrast ratio of 4.5:1, and contact colours are automatically
+  lightened or darkened until they are readable on whichever background they
+  land on.
 * **Read aloud.** New messages, and any message you click, can be spoken using
   the speech tool the machine already has (`say` on macOS, `espeak`/`spd-say`
   on Linux, SAPI on Windows). If none is installed, the button explains that
@@ -99,6 +126,7 @@ run.py                     Start here
 colorchat/
   app.py                   The main window and everything it coordinates
   theme.py                 The three palettes, fonts and text scaling
+  brand.py                 The six colours everything else is built from
   colorutil.py             Contrast maths (WCAG), shared with the art tools
   models.py                Messages, chats and the JSON store
   people.py                The address book: colours, badges, personas
@@ -120,7 +148,7 @@ tools/
   rasterizer.py            A tiny anti-aliased drawing library + PNG writer
   make_assets.py           Draws every avatar, symbol and icon
   make_screenshots.py      Regenerates the pictures in this README
-tests/test_colorchat.py    39 tests
+tests/test_colorchat.py    44 tests
 ```
 
 ### The artwork
@@ -143,8 +171,9 @@ python3 -m unittest discover -s tests -v
 ```
 
 They cover the data model and its persistence, the reply rules, the ellipsis
-helper, the presence of every image the app asks for, and the contrast of every
-colour pair in every palette. The tests that open a window (sending messages,
+helper, the presence of every image the app asks for, that every contact and
+every tile is drawn from the six brand colours (and that no two tiles on screen
+together share one), and the contrast of every colour pair in every palette. The tests that open a window (sending messages,
 switching palettes and text sizes, the picture board, search) skip themselves
 automatically when there is no display.
 
