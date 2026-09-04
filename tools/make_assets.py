@@ -601,13 +601,19 @@ def w_M(r, u, x, ink):
     return 100
 
 
-def w_S(r, u, x, ink):
+def w_s(r, u, x, ink):
     # Two overlapping bowls, each sweeping about three quarters of a circle:
     # the top one open at its lower right, the bottom one at its upper left.
-    cx = x + 37
-    r.arc(cx * u, 30 * u, 27 * u, 315, 45, RING * u, ink)
-    r.arc(cx * u, 70 * u, 27 * u, 225, 495, RING * u, ink)
-    return 74
+    # The stroke is trimmed a little from the standard weight, because at
+    # x-height a full-weight "s" closes its own counters up.
+    stroke = STROKE * 0.82
+    outer = XH * 0.39                  # bowl size: how wide the "s" sits
+    radius = outer - stroke / 2
+    cx = x + outer
+    top = CAP - XH + outer
+    r.arc(cx * u, top * u, radius * u, 315, 45, stroke * u, ink)
+    r.arc(cx * u, (CAP - outer) * u, radius * u, 225, 495, stroke * u, ink)
+    return outer * 2
 
 
 def w_a(r, u, x, ink):
@@ -645,21 +651,21 @@ def w_r(r, u, x, ink):
     return 46
 
 
-WORDMARK = "MaraSender"
+WORDMARK = "Marasender"
 WORDMARK_GLYPHS = {
-    "M": w_M, "S": w_S, "a": w_a, "d": w_d, "e": w_e, "n": w_n, "r": w_r,
+    "M": w_M, "a": w_a, "d": w_d, "e": w_e, "n": w_n, "r": w_r, "s": w_s,
 }
 LETTER_GAP = 9
 # Round letters are given a little less room on each side so the spacing looks
 # even -- a circle beside a straight stem always reads as a wider gap.
-SIDE_BEARING = {"a": -4, "d": -4, "e": -4, "n": -2, "S": -3, "r": 0, "M": 0}
+SIDE_BEARING = {"a": -4, "d": -4, "e": -4, "n": -2, "s": -3, "r": 0, "M": 0}
 # A couple of pairs need pulling together by hand: the arm of "r" hangs over
 # the letter that follows it, leaving a hole at the baseline.
-KERN = {("r", "a"): -9, ("a", "S"): -3}
+KERN = {("r", "a"): -9, ("a", "s"): -3}
 WORDMARK_HEIGHTS = (26, 32, 40, 52, 64)
 
 
-ADVANCE = {"M": 100, "S": 74, "a": 74, "d": 74, "e": 74, "n": 74, "r": 46}
+ADVANCE = {"M": 100, "a": 74, "d": 74, "e": 74, "n": 74, "r": 46, "s": XH * 0.78}
 
 
 def wordmark_width_units() -> float:

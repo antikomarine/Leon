@@ -1,4 +1,4 @@
-"""Tests for MaraSender.
+"""Tests for Marasender.
 
 Run them with::
 

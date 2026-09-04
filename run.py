@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Start MaraSender.
+"""Start Marasender.
 
     python3 run.py
 
@@ -10,7 +10,7 @@ Debian/Ubuntu it is the 'python3-tk' package).
 import sys
 
 if sys.version_info < (3, 9):
-    raise SystemExit("MaraSender needs Python 3.9 or newer.")
+    raise SystemExit("Marasender needs Python 3.9 or newer.")
 
 try:
     import tkinter  # noqa: F401

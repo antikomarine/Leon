@@ -117,14 +117,20 @@ HIGH_CONTRAST = Palette(
 
 PALETTES: tuple[Palette, ...] = (LIGHT, NIGHT, HIGH_CONTRAST)
 
-# Bauhaus 93 is the app name's typeface. It ships with Microsoft Office, so it
-# is common on Windows and rare elsewhere; the rest of the list are the closest
-# geometric faces likely to be installed. When none of them is present the app
-# falls back to the wordmark drawn in assets/wordmark.
-DISPLAY_FAMILIES = (          # in preference order
-    "Bauhaus 93", "Bauhaus93", "Bauhaus 93 Regular", "ITC Bauhaus",
-    "Futura", "Century Gothic", "URW Gothic", "Poppins", "Questrial",
-    "Trebuchet MS", "Verdana",
+# Bauhaus 93 is the app name's typeface.  Microsoft ships it with Office, so it
+# is common on Windows and rare everywhere else, and it cannot be redistributed
+# with this project.  The rest of the list, in preference order, are its
+# ancestors and the closest look-alikes a machine might already have -- Baumans
+# is the one anybody can install for free (Google Fonts, SIL Open Font
+# Licence).  When none of them is present the app falls back to the wordmark
+# drawn in assets/wordmark.
+DISPLAY_FAMILIES = (
+    "Bauhaus 93", "Bauhaus93", "Bauhaus 93 Regular",
+    "ITC Bauhaus", "Bauhaus Std", "Bauhaus Heavy",
+    "Baumans",                       # free Bauhaus-inspired face, OFL
+    "Blippo Black", "Busorama",
+    "Futura", "Century Gothic", "URW Gothic",
+    "Poppins", "Questrial", "Trebuchet MS", "Verdana",
 )
 
 BASE_SIZES = {

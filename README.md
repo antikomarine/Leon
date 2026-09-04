@@ -1,4 +1,4 @@
-# MaraSender
+# Marasender
 
 A WhatsApp-style messenger written in Python. It is built for people who find
 a wall of grey text hard to read: **every contact has their own colour**, every
@@ -72,19 +72,36 @@ black.
 
 ## The name
 
-The app is called **MaraSender**, set in **Bauhaus 93** in `#FF4200` on a dark
-bar. That font ships with Microsoft Office, so it is common on Windows and rare
-elsewhere, and it cannot be redistributed here. So the app looks for it, then
-for the nearest geometric faces (Futura, Century Gothic, URW Gothic, Poppins,
-Questrial…), and if none of them is installed it falls back to a wordmark
-**drawn** in the same geometric spirit — circular bowls, straight stems, one
-heavy weight — by `tools/make_assets.py`, at five sizes so it keeps up with the
+The app is called **Marasender**, set in **Bauhaus 93** in `#FF4200` on a dark
+bar.
+
+Bauhaus 93 is Microsoft's digital cut of the Bauhaus style: ITC Bauhaus, drawn
+by Ed Benguiat and Victor Caruso, which in turn descends from Herbert Bayer's
+1925 *Universal* alphabet — an experiment in reducing letters to shapes you can
+draw with a ruler and a compass. Microsoft ships it with Office, so it is
+everywhere on Windows and almost nowhere else, and it is not free to
+redistribute with this project.
+
+So the app looks for it, then for its relatives and look-alikes, in this order:
+
+1. `Bauhaus 93`, `ITC Bauhaus`, `Bauhaus Std`
+2. **`Baumans`** — Bauhaus-inspired, free under the SIL Open Font License and
+   available from Google Fonts. Install it and the app picks it up with no
+   configuration; it is the easiest way to get the look without Office.
+3. `Blippo Black`, `Busorama`, `Futura`, `Century Gothic`, `URW Gothic`,
+   `Poppins`, `Questrial`, `Trebuchet MS`
+
+If none of them is installed — which is the normal case on a fresh Linux or
+macOS machine — the app falls back to a wordmark **drawn** on the same
+principles Bayer used: circular bowls, straight stems, one monoline weight.
+`tools/make_assets.py` renders it at five sizes so it keeps up with the
 text-size setting:
 
-![The MaraSender wordmark](docs/screenshots/wordmark.png)
+![The Marasender wordmark](docs/screenshots/wordmark.png)
 
-Install Bauhaus 93 and the app uses the real thing instead, with no
-configuration.
+(Tk can only use fonts the operating system already knows about — it has no way
+to load a font file an application ships with — which is why the fallback is
+drawn rather than bundled.)
 
 ## Built for readability and for disabled users
 

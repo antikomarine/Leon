@@ -1,4 +1,4 @@
-"""MaraSender -- a colourful, picture-first messenger written with the standard library."""
+"""Marasender -- a colourful, picture-first messenger written with the standard library."""
 
 __version__ = "1.0.0"
-APP_NAME = "MaraSender"
+APP_NAME = "Marasender"
