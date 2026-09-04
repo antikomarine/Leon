@@ -7,7 +7,7 @@ regenerated with ``python3 tools/make_assets.py``.
 
 Four of the six are light colours: they sing on a dark background and need
 dark text or artwork on top. Nothing hard-codes that decision — the palettes
-and :func:`colorchat.colorutil.text_ink` work it out from the colour itself.
+and :func:`marasender.colorutil.text_ink` work it out from the colour itself.
 """
 
 from __future__ import annotations

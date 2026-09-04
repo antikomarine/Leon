@@ -51,7 +51,7 @@ Keyboard shortcuts
 
 The contacts here are simulated: they reply on this computer, nothing is
 sent over the internet and no account is needed. Conversations are stored
-in a small JSON file in your home folder (~/.colorchat/chats.json).
+in a small JSON file in your home folder (~/.marasender/chats.json).
 """
 
 
@@ -482,8 +482,17 @@ class App:
         self.bar.configure(background=palette.bar)
         self.bar_top.configure(background=palette.bar)
         self.toolbar.configure(background=palette.bar)
-        self.bar_title.configure(background=palette.bar, foreground=palette.bar_text,
-                                 font=theme.font("big"))
+        # The name is set in Bauhaus 93 where that font exists, and drawn from
+        # assets/wordmark everywhere else, so it looks the same on any machine.
+        if theme.has_display_font:
+            self.bar_title.configure(
+                image="", text=APP_NAME, background=palette.bar,
+                foreground=palette.wordmark, font=theme.font("wordmark"),
+            )
+        else:
+            wordmark = self.images.wordmark(round(28 * theme.scale))
+            self.bar_title.configure(image=wordmark, text="", background=palette.bar)
+            self.bar_title.image = wordmark
         self.bar_subtitle.configure(background=palette.bar, foreground=palette.bar_text,
                                     font=theme.font("small"))
         # The strapline is the first thing to go when the text gets large.

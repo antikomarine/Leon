@@ -1,6 +1,6 @@
 """Colour arithmetic, with no dependency on Tk.
 
-Kept separate from :mod:`colorchat.theme` so that the asset generator (which
+Kept separate from :mod:`marasender.theme` so that the asset generator (which
 runs without a window) can use the same contrast rules as the app.
 """
 

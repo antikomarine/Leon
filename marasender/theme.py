@@ -26,6 +26,7 @@ class Palette:
     window: str          # app background
     bar: str             # top app bar
     bar_text: str
+    wordmark: str        # the app name, in the brand orange
     panel: str           # sidebar / composer background
     panel_alt: str       # hover / selected row
     canvas: str          # chat background
@@ -47,8 +48,9 @@ LIGHT = Palette(
     name="Bright",
     description="Daylight, with the brand colours at full strength",
     window="#f2eeea",
-    bar=ORANGE,
-    bar_text=text_ink(ORANGE),
+    bar="#141a21",
+    bar_text="#f6f3f0",
+    wordmark=ORANGE,
     panel="#ffffff",
     panel_alt="#f4f0ec",
     canvas="#faf7f4",
@@ -70,8 +72,9 @@ NIGHT = Palette(
     name="Night",
     description="Dark background — where these colours glow",
     window="#0d1014",
-    bar=mix(ORANGE, "#000000", 0.68),
+    bar="#080b0e",
     bar_text=PEACH,
+    wordmark=ORANGE,
     panel="#171b21",
     panel_alt="#232a33",
     canvas="#11151a",
@@ -95,6 +98,7 @@ HIGH_CONTRAST = Palette(
     window="#000000",
     bar="#000000",
     bar_text=LIME,
+    wordmark=ORANGE,
     panel="#000000",
     panel_alt="#181818",
     canvas="#000000",
@@ -113,6 +117,16 @@ HIGH_CONTRAST = Palette(
 
 PALETTES: tuple[Palette, ...] = (LIGHT, NIGHT, HIGH_CONTRAST)
 
+# Bauhaus 93 is the app name's typeface. It ships with Microsoft Office, so it
+# is common on Windows and rare elsewhere; the rest of the list are the closest
+# geometric faces likely to be installed. When none of them is present the app
+# falls back to the wordmark drawn in assets/wordmark.
+DISPLAY_FAMILIES = (          # in preference order
+    "Bauhaus 93", "Bauhaus93", "Bauhaus 93 Regular", "ITC Bauhaus",
+    "Futura", "Century Gothic", "URW Gothic", "Poppins", "Questrial",
+    "Trebuchet MS", "Verdana",
+)
+
 BASE_SIZES = {
     "tiny": 9,
     "small": 10,
@@ -121,6 +135,7 @@ BASE_SIZES = {
     "title": 15,
     "big": 18,
     "huge": 22,
+    "wordmark": 21,
 }
 
 TEXT_SCALES = (0.9, 1.0, 1.15, 1.3, 1.5, 1.75, 2.0)
@@ -139,6 +154,7 @@ class Theme:
         self.scale_index = scale_index
         self._listeners: list[Callable[[], None]] = []
         self.family = self._pick_family()
+        self.display_family = self._pick_display_family()
         self.fonts: dict[str, tkfont.Font] = {}
         self._build_fonts()
 
@@ -150,14 +166,27 @@ class Theme:
                 return family
         return tkfont.nametofont("TkDefaultFont").cget("family")
 
+    def _pick_display_family(self) -> str | None:
+        """Bauhaus 93 if this machine has it, else the closest thing to it."""
+        available = set(tkfont.families())
+        for family in DISPLAY_FAMILIES:
+            if family in available:
+                return family
+        return None
+
+    @property
+    def has_display_font(self) -> bool:
+        return self.display_family is not None
+
     def _build_fonts(self) -> None:
         for name, size in BASE_SIZES.items():
             scaled = max(7, round(size * self.scale))
-            weight = "bold" if name in ("name", "title", "big", "huge") else "normal"
+            weight = "bold" if name in ("name", "title", "big", "huge", "wordmark") else "normal"
+            family = self.display_family or self.family if name == "wordmark" else self.family
             if name in self.fonts:
-                self.fonts[name].configure(size=scaled, family=self.family, weight=weight)
+                self.fonts[name].configure(size=scaled, family=family, weight=weight)
             else:
-                self.fonts[name] = tkfont.Font(family=self.family, size=scaled, weight=weight)
+                self.fonts[name] = tkfont.Font(family=family, size=scaled, weight=weight)
         if "body_bold" in self.fonts:
             self.fonts["body_bold"].configure(
                 size=max(7, round(BASE_SIZES["body"] * self.scale)), family=self.family

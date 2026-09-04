@@ -1,4 +1,4 @@
-# ColorChat
+# MaraSender
 
 A WhatsApp-style messenger written in Python. It is built for people who find
 a wall of grey text hard to read: **every contact has their own colour**, every
@@ -50,14 +50,14 @@ The whole app is built from six colours:
 
 | | Colour | Used for |
 | --- | --- | --- |
-| 🟥 | `#FF4200` orange | The app bar and the main action colour, Amina, "No", "Help", "Love" |
+| 🟥 | `#FF4200` orange | The wordmark and the main action colour, Amina, "No", "Help", "Love" |
 | 🟩 | `#47FF94` mint | Your own message bubbles, Luca, "Yes", "Home" |
 | 🟪 | `#7F2EFF` violet | The keyboard focus ring, Grace, "Thank you", "Medicine", "Music" |
 | 🟦 | `#62C7FF` sky | Read ticks, Tom, "Please wait", "Drink", "Call me" |
 | 🟨 | `#CBFF77` lime | The high-contrast scheme, Kenji, "Happy", "Nice weather" |
 | 🟧 | `#FFBA82` peach | Night-mode headings, Priya, "Maybe", "Food" |
 
-They live in [`colorchat/brand.py`](colorchat/brand.py), which is the only
+They live in [`marasender/brand.py`](marasender/brand.py), which is the only
 place any of them is written down — contacts, picture tiles and all three
 colour schemes are built from those six values and darker versions of them.
 Change one and rerun `python3 tools/make_assets.py`, and the contacts, symbols
@@ -69,6 +69,22 @@ near-black per colour by measuring contrast, and `readable()` lightens or
 darkens a colour until it clears 4.5:1 on whatever background it lands on. That
 is why the same six colours work on a white panel, on a dark one, and on pure
 black.
+
+## The name
+
+The app is called **MaraSender**, set in **Bauhaus 93** in `#FF4200` on a dark
+bar. That font ships with Microsoft Office, so it is common on Windows and rare
+elsewhere, and it cannot be redistributed here. So the app looks for it, then
+for the nearest geometric faces (Futura, Century Gothic, URW Gothic, Poppins,
+Questrial…), and if none of them is installed it falls back to a wordmark
+**drawn** in the same geometric spirit — circular bowls, straight stems, one
+heavy weight — by `tools/make_assets.py`, at five sizes so it keeps up with the
+text-size setting:
+
+![The MaraSender wordmark](docs/screenshots/wordmark.png)
+
+Install Bauhaus 93 and the app uses the real thing instead, with no
+configuration.
 
 ## Built for readability and for disabled users
 
@@ -85,9 +101,10 @@ This is the part of the app that got the most attention.
   app at once. The layout reflows: the conversation list widens, message
   bubbles rewrap, the toolbar wraps onto extra lines, and long names are
   shortened with an ellipsis rather than overlapping.
-* **Three colour schemes** — Bright (orange bar, colours at full strength),
-  Night (where these colours glow) and High contrast (black and lime with thick
-  outlines). Every text/background pair in every scheme is tested to meet the
+* **Three colour schemes** — Bright (colours at full strength), Night (where
+  these colours glow) and High contrast (black and lime with thick outlines).
+  All three keep the dark app bar, so the orange wordmark reads the same way in
+  each of them. Every text/background pair in every scheme is tested to meet the
   WCAG AA contrast ratio of 4.5:1, and contact colours are automatically
   lightened or darkened until they are readable on whichever background they
   land on.
@@ -123,7 +140,7 @@ This is the part of the app that got the most attention.
 
 ```
 run.py                     Start here
-colorchat/
+marasender/
   app.py                   The main window and everything it coordinates
   theme.py                 The three palettes, fonts and text scaling
   brand.py                 The six colours everything else is built from
@@ -143,12 +160,12 @@ colorchat/
     buttons.py             Picture-and-word buttons, focus rings, tooltips
     flowbar.py             A button row that wraps when the text grows
     scrollframe.py         Scrollable container with wheel support
-assets/                    192 generated PNGs (committed)
+assets/                    197 generated PNGs (committed), wordmark included
 tools/
   rasterizer.py            A tiny anti-aliased drawing library + PNG writer
   make_assets.py           Draws every avatar, symbol and icon
   make_screenshots.py      Regenerates the pictures in this README
-tests/test_colorchat.py    44 tests
+tests/test_marasender.py    48 tests
 ```
 
 ### The artwork
@@ -157,7 +174,7 @@ There are no third-party images and no image library. `tools/rasterizer.py` is
 a small supersampled rasteriser (circles, polygons, strokes, arcs, rounded
 rectangles) that writes PNGs with `zlib` and `struct`, and
 `tools/make_assets.py` draws every avatar, symbol and icon with it. To change a
-colour or add a symbol, edit `colorchat/pictograms.py` (or the drawing
+colour or add a symbol, edit `marasender/pictograms.py` (or the drawing
 functions) and run:
 
 ```bash
@@ -171,16 +188,19 @@ python3 -m unittest discover -s tests -v
 ```
 
 They cover the data model and its persistence, the reply rules, the ellipsis
-helper, the presence of every image the app asks for, that every contact and
-every tile is drawn from the six brand colours (and that no two tiles on screen
-together share one), and the contrast of every colour pair in every palette. The tests that open a window (sending messages,
-switching palettes and text sizes, the picture board, search) skip themselves
-automatically when there is no display.
+helper, the presence of every image the app asks for (the wordmark included),
+that every contact and every tile is drawn from the six brand colours — and
+that no two tiles seen side by side share one — and the contrast of every
+colour pair in every palette, the app name against its bar included.
+
+The tests that open a window (sending messages, switching palettes and text
+sizes, the picture board, search, and that the name appears either in a font or
+as the drawn wordmark) skip themselves automatically when there is no display.
 
 ## Where your messages are kept
 
-In `~/.colorchat/chats.json`. Delete that file to start again from the demo
-conversations, or point `COLORCHAT_HOME` somewhere else to keep them elsewhere.
+In `~/.marasender/chats.json`. Delete that file to start again from the demo
+conversations, or point `MARASENDER_HOME` somewhere else to keep them elsewhere.
 
 ## Scope
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Start ColorChat.
+"""Start MaraSender.
 
     python3 run.py
 
@@ -10,7 +10,7 @@ Debian/Ubuntu it is the 'python3-tk' package).
 import sys
 
 if sys.version_info < (3, 9):
-    raise SystemExit("ColorChat needs Python 3.9 or newer.")
+    raise SystemExit("MaraSender needs Python 3.9 or newer.")
 
 try:
     import tkinter  # noqa: F401
@@ -22,7 +22,7 @@ except ModuleNotFoundError:
         "  macOS/Windows:  it is included with python.org installers."
     )
 
-from colorchat.app import main
+from marasender.app import main
 
 if __name__ == "__main__":
     main()

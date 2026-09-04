@@ -15,12 +15,12 @@ import tkinter as tk
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
-os.environ.setdefault("COLORCHAT_HOME", os.path.join("/tmp", "colorchat-screenshots"))
+os.environ.setdefault("MARASENDER_HOME", os.path.join("/tmp", "marasender-screenshots"))
 
 from PIL import ImageGrab  # noqa: E402
 
-from colorchat.app import App  # noqa: E402
-from colorchat.pictograms import BY_KEY  # noqa: E402
+from marasender.app import App  # noqa: E402
+from marasender.pictograms import BY_KEY  # noqa: E402
 
 OUT = os.path.join(ROOT, "docs", "screenshots")
 WINDOW = (0, 0, 1220, 780)

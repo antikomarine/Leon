@@ -1,4 +1,4 @@
-"""Tests for ColorChat.
+"""Tests for MaraSender.
 
 Run them with::
 
@@ -18,13 +18,15 @@ import unittest
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 
-from colorchat import bots, brand, models, people, theme  # noqa: E402
-from colorchat.assets import ASSET_ROOT, AVATAR_SIZES, ICON_SIZES, PICTOGRAM_SIZES  # noqa: E402
-from colorchat.pictograms import (  # noqa: E402
+from marasender import APP_NAME, bots, brand, models, people, theme  # noqa: E402
+from marasender.assets import (  # noqa: E402
+    ASSET_ROOT, AVATAR_SIZES, ICON_SIZES, PICTOGRAM_SIZES, WORDMARK_HEIGHTS,
+)
+from marasender.pictograms import (  # noqa: E402
     BY_KEY, CATEGORIES, PICTOGRAMS, glyph_ink, in_category,
 )
-from colorchat.colorutil import text_ink  # noqa: E402
-from colorchat.textutil import elide  # noqa: E402
+from marasender.colorutil import text_ink  # noqa: E402
+from marasender.textutil import elide  # noqa: E402
 
 ICON_NAMES = (
     "send", "attach", "search", "settings", "speak", "contrast", "text_bigger",
@@ -54,6 +56,11 @@ class TestPictures(unittest.TestCase):
                 for size in ICON_SIZES:
                     path = os.path.join(ASSET_ROOT, "icons", f"{name}_{ink}_{size}.png")
                     self.assertTrue(os.path.exists(path), f"missing {path}")
+
+    def test_wordmark_files_exist(self):
+        for height in WORDMARK_HEIGHTS:
+            path = os.path.join(ASSET_ROOT, "wordmark", f"wordmark_{height}.png")
+            self.assertTrue(os.path.exists(path), f"missing {path}")
 
     def test_files_are_pngs(self):
         path = os.path.join(ASSET_ROOT, "pictograms", "yes_128.png")
@@ -151,6 +158,17 @@ class TestBrandColours(unittest.TestCase):
         for name in CATEGORIES:
             colors = [p.color for p in in_category(name)]
             self.assertEqual(len(colors), len(set(colors)), f"repeated colour in {name}")
+
+    def test_the_wordmark_is_always_the_brand_orange(self):
+        # The drawn fallback is painted in one fixed colour, so no palette may
+        # ask for a different one.
+        for palette in theme.PALETTES:
+            self.assertEqual(palette.wordmark, brand.ORANGE, palette.key)
+
+    def test_the_name_stands_out_on_the_app_bar(self):
+        for palette in theme.PALETTES:
+            ratio = theme.contrast_ratio(palette.wordmark, palette.bar)
+            self.assertGreaterEqual(ratio, 4.5, palette.key)
 
     def test_each_palette_leads_with_a_brand_colour(self):
         for palette in theme.PALETTES:
@@ -290,10 +308,10 @@ class TestApp(unittest.TestCase):
     def setUp(self):
         import tkinter as tk
 
-        from colorchat.app import App
+        from marasender.app import App
 
         self.folder = tempfile.TemporaryDirectory()
-        os.environ["COLORCHAT_HOME"] = self.folder.name
+        os.environ["MARASENDER_HOME"] = self.folder.name
         self.root = tk.Tk()
         self.app = App(self.root)
         self.root.update()
@@ -301,6 +319,13 @@ class TestApp(unittest.TestCase):
     def tearDown(self):
         self.root.destroy()
         self.folder.cleanup()
+
+    def test_the_app_bar_shows_the_name_one_way_or_the_other(self):
+        title = self.app.bar_title
+        if self.app.theme.has_display_font:
+            self.assertEqual(title.cget("text"), APP_NAME)
+        else:
+            self.assertTrue(title.cget("image"), "no font and no drawn wordmark")
 
     def test_all_pictures_load(self):
         self.assertEqual(self.app.images.missing, [])

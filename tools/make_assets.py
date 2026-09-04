@@ -25,8 +25,9 @@ ROOT = os.path.dirname(HERE)
 sys.path[:0] = [HERE, ROOT]
 
 from rasterizer import Raster, mix, rgba  # noqa: E402
-from colorchat.colorutil import is_dark  # noqa: E402
-from colorchat.pictograms import PICTOGRAMS, glyph_ink  # noqa: E402
+from marasender.brand import ORANGE  # noqa: E402
+from marasender.colorutil import is_dark  # noqa: E402
+from marasender.pictograms import PICTOGRAMS, glyph_ink  # noqa: E402
 
 ASSETS = os.path.join(ROOT, "assets")
 WHITE = rgba("#ffffff")
@@ -571,6 +572,121 @@ ICONS = {
     "tick_read": i_tick_read, "call": i_call, "video": i_video, "emoji": i_emoji,
 }
 
+# ---------------------------------------------------------------------------
+# The wordmark.
+#
+# The app name is set in Bauhaus 93 when the machine has it (it ships with
+# Microsoft Office).  Everywhere else these drawn letters stand in: geometric
+# shapes in the spirit of that face -- circular bowls, straight stems, one
+# heavy weight, flat terminals -- so the app is recognisable on any machine.
+#
+# Letters are drawn on a grid where the cap height is 100 units, the
+# x-height 74, and the stroke 22.
+# ---------------------------------------------------------------------------
+CAP, XH, STROKE = 100.0, 74.0, 22.0
+BOWL = XH / 2                      # outer radius of a lowercase bowl
+RING = STROKE                      # ring thickness
+
+
+def _stem(r, u, x, y0, y1, ink, width=STROKE):
+    r.fill_rect(x * u, y0 * u, (x + width) * u, y1 * u, ink)
+
+
+def w_M(r, u, x, ink):
+    _stem(r, u, x, 0, CAP, ink)
+    _stem(r, u, x + 78, 0, CAP, ink)
+    r.stroke_line((x + 11) * u, 0, (x + 50) * u, 66 * u, STROKE * u, ink, caps=False)
+    r.stroke_line((x + 50) * u, 66 * u, (x + 89) * u, 0, STROKE * u, ink, caps=False)
+    r.fill_circle((x + 50) * u, 66 * u, STROKE * u / 2, ink)   # fill the vertex
+    return 100
+
+
+def w_S(r, u, x, ink):
+    # Two overlapping bowls, each sweeping about three quarters of a circle:
+    # the top one open at its lower right, the bottom one at its upper left.
+    cx = x + 37
+    r.arc(cx * u, 30 * u, 27 * u, 315, 45, RING * u, ink)
+    r.arc(cx * u, 70 * u, 27 * u, 225, 495, RING * u, ink)
+    return 74
+
+
+def w_a(r, u, x, ink):
+    r.ring((x + BOWL) * u, (CAP - BOWL) * u, BOWL * u - RING * u / 2, RING * u, ink)
+    _stem(r, u, x + XH - STROKE, CAP - XH, CAP, ink)
+    return 74
+
+
+def w_d(r, u, x, ink):
+    r.ring((x + BOWL) * u, (CAP - BOWL) * u, BOWL * u - RING * u / 2, RING * u, ink)
+    _stem(r, u, x + XH - STROKE, 0, CAP, ink)
+    return 74
+
+
+def w_e(r, u, x, ink):
+    cx, cy = x + BOWL, CAP - BOWL
+    radius = BOWL - RING / 2
+    r.arc(cx * u, cy * u, radius * u, 55, 360, RING * u, ink)
+    r.fill_rect((cx - radius - RING / 2) * u, (cy - RING / 2) * u,
+                (cx + radius + RING / 2) * u, (cy + RING / 2) * u, ink)
+    return 74
+
+
+def w_n(r, u, x, ink):
+    _stem(r, u, x, CAP - XH, CAP, ink)
+    _stem(r, u, x + XH - STROKE, CAP - XH + BOWL - RING / 2, CAP, ink)
+    r.arc((x + BOWL) * u, (CAP - XH + BOWL - RING / 2) * u,
+          (BOWL - RING / 2) * u, 180, 360, RING * u, ink)
+    return 74
+
+
+def w_r(r, u, x, ink):
+    _stem(r, u, x, CAP - XH, CAP, ink)
+    r.arc((x + 28) * u, (CAP - XH + 28) * u, 28 * u - RING * u / 2, 180, 275, RING * u, ink)
+    return 46
+
+
+WORDMARK = "MaraSender"
+WORDMARK_GLYPHS = {
+    "M": w_M, "S": w_S, "a": w_a, "d": w_d, "e": w_e, "n": w_n, "r": w_r,
+}
+LETTER_GAP = 9
+# Round letters are given a little less room on each side so the spacing looks
+# even -- a circle beside a straight stem always reads as a wider gap.
+SIDE_BEARING = {"a": -4, "d": -4, "e": -4, "n": -2, "S": -3, "r": 0, "M": 0}
+# A couple of pairs need pulling together by hand: the arm of "r" hangs over
+# the letter that follows it, leaving a hole at the baseline.
+KERN = {("r", "a"): -9, ("a", "S"): -3}
+WORDMARK_HEIGHTS = (26, 32, 40, 52, 64)
+
+
+ADVANCE = {"M": 100, "S": 74, "a": 74, "d": 74, "e": 74, "n": 74, "r": 46}
+
+
+def wordmark_width_units() -> float:
+    total = 0.0
+    for index, letter in enumerate(WORDMARK):
+        total += ADVANCE[letter] + SIDE_BEARING[letter] * 2
+        if index < len(WORDMARK) - 1:
+            total += LETTER_GAP + KERN.get((letter, WORDMARK[index + 1]), 0)
+    return total
+
+
+def draw_wordmark(cap_height: int, color: str) -> Raster:
+    u = cap_height / CAP
+    pad = 3
+    width = round(wordmark_width_units() * u) + pad * 2
+    r = Raster(width, cap_height + pad * 2, ss=3)
+    ink = rgba(color)
+    x = pad / u
+    for index, letter in enumerate(WORDMARK):
+        x += SIDE_BEARING[letter]
+        advance = WORDMARK_GLYPHS[letter](r, u, x, ink)
+        x += advance + SIDE_BEARING[letter] + LETTER_GAP
+        if index < len(WORDMARK) - 1:
+            x += KERN.get((letter, WORDMARK[index + 1]), 0)
+    return r
+
+
 PICTOGRAM_SIZES = (128, 64)
 AVATAR_SIZES = (96, 44)
 ICON_SIZES = (20, 26, 34)
@@ -598,7 +714,7 @@ def main() -> None:
             r.save(os.path.join(ASSETS, "pictograms", f"{pic.key}_{size}.png"))
             count += 1
 
-    from colorchat.people import CONTACTS, ME
+    from marasender.people import CONTACTS, ME
 
     for person in (ME, *CONTACTS):
         for size in AVATAR_SIZES:
@@ -615,6 +731,14 @@ def main() -> None:
                 draw(r, size, rgba(ink_hex))
                 r.save(os.path.join(ASSETS, "icons", f"{name}_{ink_name}_{size}.png"))
                 count += 1
+
+    os.makedirs(os.path.join(ASSETS, "wordmark"), exist_ok=True)
+    for height in WORDMARK_HEIGHTS:
+        raster = draw_wordmark(height, ORANGE)
+        # The wordmark is drawn a few units above the baseline of the grid, so
+        # it is nudged into place by the padding built into draw_wordmark().
+        raster.save(os.path.join(ASSETS, "wordmark", f"wordmark_{height}.png"))
+        count += 1
 
     print(f"wrote {count} images to {ASSETS} in {time.time() - started:.1f}s")
 

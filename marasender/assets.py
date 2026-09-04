@@ -14,6 +14,7 @@ ASSET_ROOT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file
 AVATAR_SIZES = (44, 96)
 PICTOGRAM_SIZES = (64, 128)
 ICON_SIZES = (20, 26, 34)
+WORDMARK_HEIGHTS = (26, 32, 40, 52, 64)
 
 
 def _closest(wanted: int, available: tuple[int, ...]) -> int:
@@ -48,3 +49,7 @@ class Images:
 
     def icon(self, name: str, ink: str = "dark", size: int = 26) -> tk.PhotoImage | None:
         return self._load("icons", f"{name}_{ink}_{_closest(size, ICON_SIZES)}.png")
+
+    def wordmark(self, height: int = 32) -> tk.PhotoImage | None:
+        """The drawn app name, used when Bauhaus 93 is not installed."""
+        return self._load("wordmark", f"wordmark_{_closest(height, WORDMARK_HEIGHTS)}.png")

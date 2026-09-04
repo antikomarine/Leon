@@ -16,11 +16,11 @@ SENT, DELIVERED, READ = "sent", "delivered", "read"
 
 
 def data_dir() -> str:
-    """Where the conversation history lives (override with $COLORCHAT_HOME)."""
-    override = os.environ.get("COLORCHAT_HOME")
+    """Where the conversation history lives (override with $MARASENDER_HOME)."""
+    override = os.environ.get("MARASENDER_HOME")
     if override:
         return override
-    return os.path.join(os.path.expanduser("~"), ".colorchat")
+    return os.path.join(os.path.expanduser("~"), ".marasender")
 
 
 @dataclass
