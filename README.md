@@ -103,6 +103,26 @@ text-size setting:
 to load a font file an application ships with — which is why the fallback is
 drawn rather than bundled.)
 
+### Using your own wordmark
+
+If you have the name set in the real typeface, put the picture at
+`assets/wordmark/source.png` and run:
+
+```bash
+python3 tools/make_assets.py
+```
+
+It is used instead of the drawn letters, at all five sizes. A picture exported
+from a design tool is usually dark artwork on flat white; that background is
+lifted off automatically — recovering the soft edges rather than cutting a
+jagged hole — so the wordmark sits on the app bar instead of in a white box.
+Artwork that already has transparency is used exactly as it is. Supply it at
+least 76px tall so the largest text size stays sharp; bigger is better, it is
+scaled down.
+
+Reading that picture needs a PNG decoder, which `tools/rasterizer.py` now has
+alongside its writer, so this still works with nothing installed.
+
 ## Built for readability and for disabled users
 
 This is the part of the app that got the most attention.
@@ -179,10 +199,10 @@ marasender/
     scrollframe.py         Scrollable container with wheel support
 assets/                    197 generated PNGs (committed), wordmark included
 tools/
-  rasterizer.py            A tiny anti-aliased drawing library + PNG writer
+  rasterizer.py            A tiny anti-aliased drawing library, PNG writer and reader
   make_assets.py           Draws every avatar, symbol and icon
   make_screenshots.py      Regenerates the pictures in this README
-tests/test_marasender.py    48 tests
+tests/test_marasender.py    51 tests
 ```
 
 ### The artwork

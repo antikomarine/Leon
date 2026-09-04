@@ -276,3 +276,207 @@ def _clip_circle(raster: Raster, cx: float, cy: float, r: float) -> None:
 
 
 Raster.clip_circle = _clip_circle
+
+
+# ---------------------------------------------------------------------------
+# Reading PNGs back in.
+#
+# The app ships artwork it draws itself, but a wordmark set in a real typeface
+# has to come from outside.  These helpers let the asset build take a supplied
+# PNG, lift it off its background, recolour it and scale it down cleanly --
+# still without any third-party library.
+# ---------------------------------------------------------------------------
+def read_png(path: str) -> tuple[int, int, bytearray]:
+    """Decode a PNG into (width, height, RGBA bytes).
+
+    Supports 8- and 16-bit greyscale, RGB, palette and alpha images, which
+    covers anything an image editor or a browser will hand you.  Interlaced
+    files are refused with a clear message rather than decoded wrongly.
+    """
+    with open(path, "rb") as handle:
+        data = handle.read()
+    if data[:8] != b"\x89PNG\r\n\x1a\n":
+        raise ValueError(f"{path} is not a PNG file")
+
+    pos = 8
+    header = None
+    palette = b""
+    transparency = b""
+    idat = bytearray()
+    while pos < len(data):
+        length = struct.unpack(">I", data[pos : pos + 4])[0]
+        tag = data[pos + 4 : pos + 8]
+        body = data[pos + 8 : pos + 8 + length]
+        pos += 12 + length
+        if tag == b"IHDR":
+            header = struct.unpack(">IIBBBBB", body)
+        elif tag == b"PLTE":
+            palette = body
+        elif tag == b"tRNS":
+            transparency = body
+        elif tag == b"IDAT":
+            idat += body
+        elif tag == b"IEND":
+            break
+    if header is None:
+        raise ValueError(f"{path} has no header chunk")
+
+    width, height, depth, color_type, _comp, _filt, interlace = header
+    if interlace:
+        raise ValueError(f"{path} is interlaced; save it without interlacing")
+    if depth not in (8, 16):
+        raise ValueError(f"{path} uses {depth}-bit samples; save it as 8-bit")
+
+    channels = {0: 1, 2: 3, 3: 1, 4: 2, 6: 4}[color_type]
+    sample = depth // 8
+    stride = width * channels * sample
+    step = channels * sample
+    raw = zlib.decompress(bytes(idat))
+
+    # Undo the per-scanline filters.
+    lines = bytearray(stride * height)
+    previous = bytearray(stride)
+    at = 0
+    for y in range(height):
+        filter_type = raw[at]
+        at += 1
+        line = bytearray(raw[at : at + stride])
+        at += stride
+        if filter_type == 1:
+            for i in range(step, stride):
+                line[i] = (line[i] + line[i - step]) & 0xFF
+        elif filter_type == 2:
+            for i in range(stride):
+                line[i] = (line[i] + previous[i]) & 0xFF
+        elif filter_type == 3:
+            for i in range(stride):
+                left = line[i - step] if i >= step else 0
+                line[i] = (line[i] + ((left + previous[i]) >> 1)) & 0xFF
+        elif filter_type == 4:
+            for i in range(stride):
+                left = line[i - step] if i >= step else 0
+                up = previous[i]
+                upper_left = previous[i - step] if i >= step else 0
+                p = left + up - upper_left
+                pa, pb, pc = abs(p - left), abs(p - up), abs(p - upper_left)
+                nearest = left if (pa <= pb and pa <= pc) else (up if pb <= pc else upper_left)
+                line[i] = (line[i] + nearest) & 0xFF
+        elif filter_type != 0:
+            raise ValueError(f"{path} uses unknown filter {filter_type}")
+        lines[y * stride : (y + 1) * stride] = line
+        previous = line
+
+    # Expand whatever colour model it used into straight RGBA.
+    out = bytearray(width * height * 4)
+    alpha_for_index = {}
+    for index, value in enumerate(transparency):
+        alpha_for_index[index] = value
+    for y in range(height):
+        row = y * stride
+        for x in range(width):
+            i = row + x * step
+            o = (y * width + x) * 4
+            if color_type == 0:
+                grey = lines[i]
+                out[o : o + 4] = bytes((grey, grey, grey, 255))
+            elif color_type == 2:
+                out[o : o + 3] = bytes((lines[i], lines[i + sample], lines[i + 2 * sample]))
+                out[o + 3] = 255
+            elif color_type == 3:
+                index = lines[i]
+                out[o : o + 3] = palette[index * 3 : index * 3 + 3]
+                out[o + 3] = alpha_for_index.get(index, 255)
+            elif color_type == 4:
+                grey = lines[i]
+                out[o : o + 4] = bytes((grey, grey, grey, lines[i + sample]))
+            else:
+                out[o] = lines[i]
+                out[o + 1] = lines[i + sample]
+                out[o + 2] = lines[i + 2 * sample]
+                out[o + 3] = lines[i + 3 * sample]
+    return width, height, out
+
+
+def looks_like_flat_background(width: int, height: int, px: bytearray) -> bool:
+    """True when the four corners are the same opaque light colour."""
+    corners = []
+    for x, y in ((0, 0), (width - 1, 0), (0, height - 1), (width - 1, height - 1)):
+        i = (y * width + x) * 4
+        corners.append(tuple(px[i : i + 4]))
+    first = corners[0]
+    if first[3] < 250 or min(first[:3]) < 200:
+        return False
+    return all(max(abs(a - b) for a, b in zip(corner, first)) < 12 for corner in corners)
+
+
+def background_to_alpha(width: int, height: int, px: bytearray, ink: Color) -> bytearray:
+    """Lift artwork off a flat light background, keeping its soft edges.
+
+    Every pixel is treated as a blend of the ink colour over the background, so
+    the coverage can be recovered instead of guessed -- which is what keeps the
+    edges smooth rather than jagged.
+    """
+    i = 0
+    background = tuple(px[0:3])
+    channel = max(range(3), key=lambda c: abs(background[c] - ink[c]))
+    span = background[channel] - ink[channel]
+    if span == 0:
+        return px
+    out = bytearray(len(px))
+    for i in range(0, len(px), 4):
+        coverage = (background[channel] - px[i + channel]) / span
+        alpha = max(0.0, min(1.0, coverage)) * (px[i + 3] / 255)
+        out[i : i + 3] = bytes(ink[:3])
+        out[i + 3] = round(alpha * 255)
+    return out
+
+
+def trim_rgba(width: int, height: int, px: bytearray, margin: int = 0):
+    """Crop away fully transparent edges."""
+    left, right, top, bottom = width, -1, height, -1
+    for y in range(height):
+        row = y * width * 4
+        for x in range(width):
+            if px[row + x * 4 + 3] > 4:
+                left, right = min(left, x), max(right, x)
+                top, bottom = min(top, y), max(bottom, y)
+    if right < 0:
+        return width, height, px
+    left = max(0, left - margin)
+    top = max(0, top - margin)
+    right = min(width - 1, right + margin)
+    bottom = min(height - 1, bottom + margin)
+    new_w, new_h = right - left + 1, bottom - top + 1
+    out = bytearray(new_w * new_h * 4)
+    for y in range(new_h):
+        source = ((y + top) * width + left) * 4
+        out[y * new_w * 4 : (y + 1) * new_w * 4] = px[source : source + new_w * 4]
+    return new_w, new_h, out
+
+
+def scale_rgba(width: int, height: int, px: bytearray, new_w: int, new_h: int) -> bytearray:
+    """Box-filter resample, working on premultiplied alpha so edges stay clean."""
+    out = bytearray(new_w * new_h * 4)
+    for y in range(new_h):
+        y0, y1 = y * height // new_h, max(y * height // new_h + 1, (y + 1) * height // new_h)
+        for x in range(new_w):
+            x0, x1 = x * width // new_w, max(x * width // new_w + 1, (x + 1) * width // new_w)
+            acc_a = acc_r = acc_g = acc_b = 0
+            count = 0
+            for sy in range(y0, y1):
+                row = (sy * width) * 4
+                for sx in range(x0, x1):
+                    i = row + sx * 4
+                    a = px[i + 3]
+                    acc_a += a
+                    acc_r += px[i] * a
+                    acc_g += px[i + 1] * a
+                    acc_b += px[i + 2] * a
+                    count += 1
+            o = (y * new_w + x) * 4
+            if acc_a:
+                out[o] = round(acc_r / acc_a)
+                out[o + 1] = round(acc_g / acc_a)
+                out[o + 2] = round(acc_b / acc_a)
+                out[o + 3] = round(acc_a / max(1, count))
+    return out

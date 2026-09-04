@@ -81,6 +81,54 @@ class TestPictures(unittest.TestCase):
             self.assertTrue(pictogram.message.strip(), pictogram.key)
 
 
+class TestImageTools(unittest.TestCase):
+    """The PNG writer and reader in tools/ have to agree with each other,
+    because the wordmark can come in as a supplied picture."""
+
+    def setUp(self):
+        sys.path.insert(0, os.path.join(ROOT, "tools"))
+        self.folder = tempfile.TemporaryDirectory()
+
+    def tearDown(self):
+        self.folder.cleanup()
+
+    def test_written_pixels_come_back_unchanged(self):
+        from rasterizer import read_png, write_png
+
+        pixels = bytearray()
+        for y in range(7):
+            for x in range(5):
+                pixels += bytes((x * 20, y * 30, 128, 255 if (x + y) % 2 else 40))
+        path = os.path.join(self.folder.name, "round-trip.png")
+        write_png(path, 5, 7, bytes(pixels))
+        width, height, back = read_png(path)
+        self.assertEqual((width, height), (5, 7))
+        self.assertEqual(bytes(back), bytes(pixels))
+
+    def test_a_white_background_becomes_transparent(self):
+        from rasterizer import (
+            background_to_alpha, looks_like_flat_background, rgba, trim_rgba,
+        )
+
+        width = height = 6
+        pixels = bytearray(b"\xff\xff\xff\xff" * width * height)
+        middle = (2 * width + 2) * 4
+        pixels[middle : middle + 4] = bytes((255, 66, 0, 255))     # one ink pixel
+        self.assertTrue(looks_like_flat_background(width, height, pixels))
+        lifted = background_to_alpha(width, height, pixels, rgba("#FF4200"))
+        self.assertEqual(lifted[3], 0, "the background should be see-through")
+        self.assertEqual(lifted[middle + 3], 255, "the artwork should stay solid")
+        self.assertEqual(trim_rgba(width, height, lifted)[:2], (1, 1))
+
+    def test_scaling_keeps_the_shape(self):
+        from rasterizer import scale_rgba
+
+        pixels = bytearray(b"\xff\x42\x00\xff" * 4 * 4)
+        smaller = scale_rgba(4, 4, pixels, 2, 2)
+        self.assertEqual(len(smaller), 2 * 2 * 4)
+        self.assertEqual(tuple(smaller[0:4]), (255, 66, 0, 255))
+
+
 class TestPeople(unittest.TestCase):
     def test_contacts_are_distinguishable_without_colour(self):
         badges = [person.badge for person in people.CONTACTS]

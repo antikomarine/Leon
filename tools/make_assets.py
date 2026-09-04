@@ -24,7 +24,10 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path[:0] = [HERE, ROOT]
 
-from rasterizer import Raster, mix, rgba  # noqa: E402
+from rasterizer import (  # noqa: E402
+    Raster, background_to_alpha, looks_like_flat_background, mix, read_png, rgba,
+    scale_rgba, trim_rgba, write_png,
+)
 from marasender.brand import ORANGE  # noqa: E402
 from marasender.colorutil import is_dark  # noqa: E402
 from marasender.pictograms import PICTOGRAMS, glyph_ink  # noqa: E402
@@ -655,7 +658,7 @@ WORDMARK = "Marasender"
 WORDMARK_GLYPHS = {
     "M": w_M, "a": w_a, "d": w_d, "e": w_e, "n": w_n, "r": w_r, "s": w_s,
 }
-LETTER_GAP = 9
+LETTER_GAP = 7
 # Round letters are given a little less room on each side so the spacing looks
 # even -- a circle beside a straight stem always reads as a wider gap.
 SIDE_BEARING = {"a": -4, "d": -4, "e": -4, "n": -2, "s": -3, "r": 0, "M": 0}
@@ -663,6 +666,10 @@ SIDE_BEARING = {"a": -4, "d": -4, "e": -4, "n": -2, "s": -3, "r": 0, "M": 0}
 # the letter that follows it, leaving a hole at the baseline.
 KERN = {("r", "a"): -9, ("a", "s"): -3}
 WORDMARK_HEIGHTS = (26, 32, 40, 52, 64)
+PADDING = 6                        # the drawn wordmark's breathing room
+# Drop a picture of the name here -- set in Bauhaus 93, or anything else -- and
+# it is used instead of the drawn letters.
+WORDMARK_SOURCE = os.path.join(ASSETS, "wordmark", "source.png")
 
 
 ADVANCE = {"M": 100, "a": 74, "d": 74, "e": 74, "n": 74, "r": 46, "s": XH * 0.78}
@@ -677,9 +684,38 @@ def wordmark_width_units() -> float:
     return total
 
 
+def wordmark_from_source(path: str, color: str) -> int:
+    """Build the wordmark from a supplied picture instead of drawing it.
+
+    A picture exported from a design tool usually arrives as dark artwork on a
+    flat white background; that background is lifted off (keeping the soft
+    edges) so the wordmark sits on the app bar rather than in a white box.
+    Artwork that already has transparency is used exactly as it is.
+    """
+    width, height, pixels = read_png(path)
+    if looks_like_flat_background(width, height, pixels):
+        pixels = background_to_alpha(width, height, pixels, rgba(color))
+    width, height, pixels = trim_rgba(width, height, pixels, margin=1)
+
+    tallest = max(WORDMARK_HEIGHTS) + PADDING * 2
+    if height < tallest:
+        print(f"  note: {os.path.basename(path)} is only {height}px tall; "
+              f"{tallest}px or more keeps the largest text size sharp")
+
+    written = 0
+    for target in WORDMARK_HEIGHTS:
+        new_h = target + PADDING * 2
+        new_w = max(1, round(width * new_h / height))
+        scaled = scale_rgba(width, height, pixels, new_w, new_h)
+        write_png(os.path.join(ASSETS, "wordmark", f"wordmark_{target}.png"),
+                  new_w, new_h, scaled)
+        written += 1
+    return written
+
+
 def draw_wordmark(cap_height: int, color: str) -> Raster:
     u = cap_height / CAP
-    pad = 3
+    pad = PADDING
     width = round(wordmark_width_units() * u) + pad * 2
     r = Raster(width, cap_height + pad * 2, ss=3)
     ink = rgba(color)
@@ -739,12 +775,15 @@ def main() -> None:
                 count += 1
 
     os.makedirs(os.path.join(ASSETS, "wordmark"), exist_ok=True)
-    for height in WORDMARK_HEIGHTS:
-        raster = draw_wordmark(height, ORANGE)
-        # The wordmark is drawn a few units above the baseline of the grid, so
-        # it is nudged into place by the padding built into draw_wordmark().
-        raster.save(os.path.join(ASSETS, "wordmark", f"wordmark_{height}.png"))
-        count += 1
+    if os.path.exists(WORDMARK_SOURCE):
+        print(f"using {os.path.relpath(WORDMARK_SOURCE, ROOT)} for the wordmark")
+        count += wordmark_from_source(WORDMARK_SOURCE, ORANGE)
+    else:
+        for height in WORDMARK_HEIGHTS:
+            draw_wordmark(height, ORANGE).save(
+                os.path.join(ASSETS, "wordmark", f"wordmark_{height}.png")
+            )
+            count += 1
 
     print(f"wrote {count} images to {ASSETS} in {time.time() - started:.1f}s")
 
