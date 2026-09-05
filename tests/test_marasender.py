@@ -120,13 +120,30 @@ class TestImageTools(unittest.TestCase):
         self.assertEqual(lifted[middle + 3], 255, "the artwork should stay solid")
         self.assertEqual(trim_rgba(width, height, lifted)[:2], (1, 1))
 
-    def test_scaling_keeps_the_shape(self):
+    def test_scaling_down_keeps_the_shape(self):
         from rasterizer import scale_rgba
 
         pixels = bytearray(b"\xff\x42\x00\xff" * 4 * 4)
         smaller = scale_rgba(4, 4, pixels, 2, 2)
         self.assertEqual(len(smaller), 2 * 2 * 4)
         self.assertEqual(tuple(smaller[0:4]), (255, 66, 0, 255))
+
+    def test_scaling_up_keeps_solid_areas_solid(self):
+        # A supplied wordmark is usually smaller than the largest size the app
+        # asks for, so growing has to hold its colour and its edges.
+        from rasterizer import scale_rgba
+
+        width = height = 4
+        pixels = bytearray(b"\x00\x00\x00\x00" * width * height)
+        for y in (1, 2):
+            for x in (1, 2):
+                i = (y * width + x) * 4
+                pixels[i : i + 4] = bytes((255, 66, 0, 255))
+        bigger = scale_rgba(width, height, pixels, 16, 16)
+        self.assertEqual(len(bigger), 16 * 16 * 4)
+        middle = (8 * 16 + 8) * 4
+        self.assertEqual(tuple(bigger[middle : middle + 4]), (255, 66, 0, 255))
+        self.assertEqual(bigger[3], 0, "the empty corner should stay empty")
 
 
 class TestPeople(unittest.TestCase):

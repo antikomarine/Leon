@@ -454,7 +454,65 @@ def trim_rgba(width: int, height: int, px: bytearray, margin: int = 0):
     return new_w, new_h, out
 
 
-def scale_rgba(width: int, height: int, px: bytearray, new_w: int, new_h: int) -> bytearray:
+def scale_rgba(
+    width: int, height: int, px: bytearray, new_w: int, new_h: int, sharpen: float = 2.2
+) -> bytearray:
+    """Resample to a new size, choosing the right method for the direction.
+
+    Shrinking uses a box filter.  Growing uses bilinear interpolation followed
+    by a contrast curve on the alpha channel: interpolation alone turns a small
+    logo into a blur, and nearest-neighbour turns it into a staircase, but
+    pulling the interpolated coverage back towards 0 and 1 reconstructs a clean
+    edge.  Artwork in a single flat colour -- which a wordmark is -- takes to
+    this well.
+    """
+    if new_w > width or new_h > height:
+        return _grow_rgba(width, height, px, new_w, new_h, sharpen)
+    return _shrink_rgba(width, height, px, new_w, new_h)
+
+
+def _grow_rgba(
+    width: int, height: int, px: bytearray, new_w: int, new_h: int, sharpen: float
+) -> bytearray:
+    out = bytearray(new_w * new_h * 4)
+    x_ratio = width / new_w
+    y_ratio = height / new_h
+    for y in range(new_h):
+        source_y = min(height - 1.0, max(0.0, (y + 0.5) * y_ratio - 0.5))
+        y0 = int(source_y)
+        y1 = min(height - 1, y0 + 1)
+        wy = source_y - y0
+        for x in range(new_w):
+            source_x = min(width - 1.0, max(0.0, (x + 0.5) * x_ratio - 0.5))
+            x0 = int(source_x)
+            x1 = min(width - 1, x0 + 1)
+            wx = source_x - x0
+            acc = [0.0, 0.0, 0.0, 0.0]
+            for (sx, sy, weight) in (
+                (x0, y0, (1 - wx) * (1 - wy)), (x1, y0, wx * (1 - wy)),
+                (x0, y1, (1 - wx) * wy), (x1, y1, wx * wy),
+            ):
+                if weight <= 0:
+                    continue
+                i = (sy * width + sx) * 4
+                alpha = px[i + 3] / 255
+                acc[0] += px[i] * alpha * weight
+                acc[1] += px[i + 1] * alpha * weight
+                acc[2] += px[i + 2] * alpha * weight
+                acc[3] += alpha * weight
+            o = (y * new_w + x) * 4
+            coverage = acc[3]
+            if coverage > 0:
+                out[o] = min(255, round(acc[0] / coverage))
+                out[o + 1] = min(255, round(acc[1] / coverage))
+                out[o + 2] = min(255, round(acc[2] / coverage))
+            # Push part-covered pixels towards fully on or fully off.
+            edged = (coverage - 0.5) * sharpen + 0.5
+            out[o + 3] = round(max(0.0, min(1.0, edged)) * 255)
+    return out
+
+
+def _shrink_rgba(width: int, height: int, px: bytearray, new_w: int, new_h: int) -> bytearray:
     """Box-filter resample, working on premultiplied alpha so edges stay clean."""
     out = bytearray(new_w * new_h * 4)
     for y in range(new_h):

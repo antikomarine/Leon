@@ -667,9 +667,31 @@ SIDE_BEARING = {"a": -4, "d": -4, "e": -4, "n": -2, "s": -3, "r": 0, "M": 0}
 KERN = {("r", "a"): -9, ("a", "s"): -3}
 WORDMARK_HEIGHTS = (26, 32, 40, 52, 64)
 PADDING = 6                        # the drawn wordmark's breathing room
-# Drop a picture of the name here -- set in Bauhaus 93, or anything else -- and
-# it is used instead of the drawn letters.
-WORDMARK_SOURCE = os.path.join(ASSETS, "wordmark", "source.png")
+# Drop a picture of the name in assets/wordmark/ -- set in Bauhaus 93, or
+# anything else -- and it is used instead of the drawn letters.  "source.png"
+# is the name to use, but any other PNG dropped in there is picked up too, so
+# a file straight off a phone or a screenshot tool does not need renaming.
+WORDMARK_DIR = os.path.join(ASSETS, "wordmark")
+WORDMARK_SOURCE = os.path.join(WORDMARK_DIR, "source.png")
+
+
+def find_wordmark_source() -> str | None:
+    """The supplied wordmark picture, if there is one."""
+    if os.path.exists(WORDMARK_SOURCE):
+        return WORDMARK_SOURCE
+    if not os.path.isdir(WORDMARK_DIR):
+        return None
+    generated = {f"wordmark_{h}.png" for h in WORDMARK_HEIGHTS}
+    spare = sorted(
+        name for name in os.listdir(WORDMARK_DIR)
+        if name.lower().endswith(".png") and name not in generated
+    )
+    if len(spare) == 1:
+        return os.path.join(WORDMARK_DIR, spare[0])
+    if spare:
+        print("  several pictures in assets/wordmark/; rename the one you want "
+              f"to source.png: {', '.join(spare)}")
+    return None
 
 
 ADVANCE = {"M": 100, "a": 74, "d": 74, "e": 74, "n": 74, "r": 46, "s": XH * 0.78}
@@ -774,10 +796,11 @@ def main() -> None:
                 r.save(os.path.join(ASSETS, "icons", f"{name}_{ink_name}_{size}.png"))
                 count += 1
 
-    os.makedirs(os.path.join(ASSETS, "wordmark"), exist_ok=True)
-    if os.path.exists(WORDMARK_SOURCE):
-        print(f"using {os.path.relpath(WORDMARK_SOURCE, ROOT)} for the wordmark")
-        count += wordmark_from_source(WORDMARK_SOURCE, ORANGE)
+    os.makedirs(WORDMARK_DIR, exist_ok=True)
+    source = find_wordmark_source()
+    if source is not None:
+        print(f"using {os.path.relpath(source, ROOT)} for the wordmark")
+        count += wordmark_from_source(source, ORANGE)
     else:
         for height in WORDMARK_HEIGHTS:
             draw_wordmark(height, ORANGE).save(

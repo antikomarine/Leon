@@ -105,8 +105,9 @@ drawn rather than bundled.)
 
 ### Using your own wordmark
 
-If you have the name set in the real typeface, put the picture at
-`assets/wordmark/source.png` and run:
+If you have the name set in the real typeface, put the picture in
+`assets/wordmark/` — call it `source.png`, or drop it in under whatever name it
+already has — and run:
 
 ```bash
 python3 tools/make_assets.py
@@ -116,9 +117,13 @@ It is used instead of the drawn letters, at all five sizes. A picture exported
 from a design tool is usually dark artwork on flat white; that background is
 lifted off automatically — recovering the soft edges rather than cutting a
 jagged hole — so the wordmark sits on the app bar instead of in a white box.
-Artwork that already has transparency is used exactly as it is. Supply it at
-least 76px tall so the largest text size stays sharp; bigger is better, it is
-scaled down.
+Artwork that already has transparency is used exactly as it is.
+
+Supply it at least 76px tall and every size is a clean reduction. A smaller
+picture still works — it is grown by interpolating and then pulling the
+part-covered pixels back towards fully on or fully off, which reconstructs a
+crisp edge instead of the blur or the staircase you would otherwise get — but
+detail it never had cannot be invented, so bigger is better.
 
 Reading that picture needs a PNG decoder, which `tools/rasterizer.py` now has
 alongside its writer, so this still works with nothing installed.
